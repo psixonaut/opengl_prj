@@ -1,0 +1,333 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include<windows.h>
+#include <glut.h>
+#include <iostream>
+
+GLfloat t = 0;
+char* texture = new char[15] {"m_w_wood01.bmp"};
+
+const float light0_position[4] = {0, 1, 1, 0};
+
+double rotate_y = 0;
+double rotate_x = 0;
+double rotateangl = 0;
+
+bool tea_time = 0;
+
+int timer = 0;
+float scaleChange = 0;
+float movx = 0.0;
+float movz = 0.0;
+
+
+void specialKeys(int key, int n, int m) {
+	if (key == GLUT_KEY_RIGHT){
+		rotate_y += 5;}
+	else if (key == GLUT_KEY_LEFT){
+		rotate_y -= 5;}
+	else if (key == GLUT_KEY_UP)
+		rotate_x -= 5;
+	else if (key == GLUT_KEY_DOWN)
+		rotate_x += 5;
+	else if (key == GLUT_KEY_F10 and tea_time == 0)
+		movz += 0.1;
+	else if (key == GLUT_KEY_F9 and tea_time == 0)
+		movz -= 0.1;
+	else if (key == GLUT_KEY_F8 and tea_time == 0)
+		movx += 0.1;
+	else if (key == GLUT_KEY_F7 and tea_time == 0)
+		movx -= 0.1;
+	else if (key == GLUT_KEY_F5 and tea_time == 0)
+		rotateangl += 15;
+	else if (key == GLUT_KEY_F6 and tea_time == 0)
+		rotateangl -= 15;
+	else if (key == GLUT_KEY_HOME and tea_time == 0){
+		tea_time = 1;
+		rotateangl = 0;
+		movx = 0;
+		movz = 0;
+	}
+	glutPostRedisplay();
+}
+
+
+GLuint groundTex;
+
+
+GLuint LoadTexture(const char* filename)
+{//Функция считывания текстуры из файла
+	GLuint texture;
+	int width, height;
+	unsigned char* data;
+	FILE* file;
+	file = fopen(filename, "rb");
+	if (file == NULL) return 0; //Не считывать несуществующий файл
+	width = 256; //Размер изображения в пикселях
+	height = 256;
+	data = (unsigned char*)malloc(width * height * 3);
+	fread(data, width * height * 3, 1, file);
+	fclose(file);
+
+	for (int i = 0; i < width * height; ++i)
+	{
+		int index = i * 3;
+		unsigned char B, R;
+		B = data[index];
+		R = data[index + 2];
+
+		data[index] = R;
+		data[index + 2] = B;
+	}
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+	free(data);
+	return texture;
+	glutPostRedisplay();
+}
+
+
+void scale() {
+	if (timer < 5){
+		scaleChange += 0.2;
+		timer++;
+	}
+}
+
+
+void Ground() {
+	groundTex = LoadTexture(texture);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, groundTex);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glBegin(GL_QUADS);
+
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(0.5f, 0.0f, -0.5f);
+
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(-0.5f, 0.0f, -0.5f);
+
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(-0.5f, 0.0f, 0.5f);
+
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(0.5f, 0.0f, 0.5f);
+
+	glEnd();
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glutPostRedisplay();
+}
+
+
+void timefunc() {
+}
+
+
+void teatime(float x, float y, float z, float scalechange) {
+	
+	scale();
+	
+	glPushMatrix();
+	glScalef(scalechange, scalechange, scalechange);
+
+	glPushMatrix(); 
+	glColor3ub(194, 174, 225);
+	glTranslatef(x, y + 0.39, z);
+	glRotatef(90, 1, 0, 0);
+	gluCylinder(gluNewQuadric(), 0.1, 0.07, 0.1, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(194, 174, 225);
+	glTranslatef(x, y + 0.32, z);
+	glScalef(1, 0.1, 1);
+	glutSolidSphere(0.099, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x, y + 0.33, z);
+	glRotatef(90, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x + 0.03, y + 0.36, z);
+	glRotatef(90, 0, 1, 0);
+	glRotatef(180 - 45, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x - 0.03, y + 0.36, z);
+	glRotatef(90, 0, 1, 0);
+	glRotatef(45, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(123, 0, 0);
+	glTranslatef(x + 0.03, y + 0.36, z + 0.03);
+	glRotatef(90, 0, 1, 0);
+	glRotatef(180 - 45, 1, 1, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);;
+	glTranslatef(x - 0.03, y + 0.36, z+0.03);
+	glRotatef(90, 0, 1, 0);
+	glRotatef(45, 1, 1, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x + 0.03, y + 0.36, z - 0.03);
+	glRotatef(90, 0, 1, 0);
+	glRotatef(45, 0, 1, 0);
+	glRotatef(360-45, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(123, 0, 0);
+	glTranslatef(x - 0.03, y + 0.36, z - 0.03);
+	glRotatef(45, 1, 1, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x - 0.002, y + 0.36, z + 0.03);
+	glRotatef(360 - 45, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+
+	glPushMatrix(); 
+	glColor3ub(123, 0, 0);
+	glTranslatef(x + 0.002, y + 0.36, z - 0.03);
+	glRotatef(45, 1, 0, 0);
+	glutSolidTorus(0.01, 0.02, 30, 30);
+	glPopMatrix();
+	glPopMatrix();
+}
+
+
+void Display()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	float x = 0.0;
+	float y = 0.0;
+	float z = 0.0;
+
+	glLoadIdentity();
+
+	glRotatef(rotate_x, 1.0, 0.0, 0.0);
+	glRotatef(rotate_y, 0.0, 1.0, 0.0);
+
+	Ground();
+	GLUquadric* obj = gluNewQuadric();
+	
+	
+
+
+	glPushMatrix();
+	glColor3ub(194, 103, 0);
+	glTranslatef(x, y + 0.3, z);
+	glScalef(0.75, 0.05, 0.75);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(194, 103, 0);
+	glTranslatef(x - 0.3, y + 0.15, z - 0.3);
+	glScalef(0.05, 0.3, 0.05);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(194, 103, 0);
+	glTranslatef(x - 0.3, y + 0.15, z + 0.3);
+	glScalef(0.05, 0.3, 0.05);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(194, 103, 0);
+	glTranslatef(x + 0.3, y + 0.15, z - 0.3);
+	glScalef(0.05, 0.3, 0.05);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(194, 103, 0);
+	glTranslatef(x + 0.3, y + 0.15, z + 0.3);
+	glScalef(0.05, 0.3, 0.05);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3ub(194, 194, 194);
+	glTranslatef(x + movx + 0.2, y + 0.39, z + movz + 0.2);
+	glRotatef(rotateangl + 135, 0, 1, 0);
+	glutSolidTeapot(0.09);
+	glPopMatrix();
+
+	if (tea_time == 1) teatime(x, y, z, scaleChange);
+	glScalef(scaleChange, scaleChange, scaleChange);
+
+	glFlush();
+	Sleep(50);
+	glutSwapBuffers();
+	glutPostRedisplay();
+	glutPostRedisplay();	
+}
+
+
+void Initialize(){
+	glClearColor(1.0, 1.0, 1.0, 0.0f);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-1, 1, -1, 1, 0, 0);
+	glutPostRedisplay();
+}
+
+
+int main(int argc, char** argv) {
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(800, 800);
+	glutInitWindowPosition(100, 200);
+	glutCreateWindow("Чайник");
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_COLOR_MATERIAL);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+	float ambient[4] = { 0.55, 0.55, 0.7, 1 };
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+
+	glutDisplayFunc(Display);
+	glutSpecialFunc(specialKeys);
+	Initialize();
+	glutMainLoop();
+	delete[] texture;
+	return 0;
+}
